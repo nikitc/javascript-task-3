@@ -160,14 +160,24 @@ function getMinutes(startTime, day, hours) {
     return startTime - 60 * 24 * day - hours * 60;
 }
 
+
+function convertToBegin(timeRobbery) {
+    if (timeRobbery.minutes === 0) {
+        timeRobbery.minutes = '00';
+    }
+
+    if (timeRobbery.hours === 0) {
+        timeRobbery.hours = '00';
+    }
+
+    return timeRobbery;
+}
 function getTimeRobbery(startTime) {
     var timeRobbery = {};
     timeRobbery.day = Math.floor(startTime / (60 * 24));
     timeRobbery.hours = getHours(startTime, timeRobbery.day);
     timeRobbery.minutes = getMinutes(startTime, timeRobbery.day, timeRobbery.hours);
-    if (timeRobbery.minutes === 0) {
-        timeRobbery.minutes = '00';
-    }
+    timeRobbery = convertToBegin(timeRobbery);
 
     return timeRobbery;
 }
