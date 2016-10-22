@@ -79,8 +79,9 @@ function createTimeTable() {
 }
 
 
-function getNewSchedule(schedule, friend, timeZone) {
+function getTableFriend(schedule, friend, timeZone) {
     var newSchedule = [];
+
     for (var index = 0; index < schedule[friend].length; index++) {
         var meet = {};
         var meetTimeZone = getTimeZone(schedule[friend][index].from);
@@ -97,10 +98,9 @@ function getNewSchedule(schedule, friend, timeZone) {
 function leadToBankTime(schedule, workingHours) {
     var timeZone = getTimeZone(workingHours.from);
     var newSchedule = {};
-    var keys = Object.keys(schedule);
-    for (var friend in keys) {
+    for (var friend in schedule) {
         if (schedule.hasOwnProperty(friend)) {
-            newSchedule[friend] = getNewSchedule(schedule, friend, timeZone);
+            newSchedule[friend] = getTableFriend(schedule, friend, timeZone);
         }
     }
 
@@ -179,7 +179,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     newWorkingHours.from = parseBankWork(workingHours.from);
     newWorkingHours.to = parseBankWork(workingHours.to);
     var tableTime = createTimeTable();
-
     for (var friend in newSchedule) {
         if (newSchedule.hasOwnProperty(friend)) {
             newSchedule[friend].forEach(function (table) {
