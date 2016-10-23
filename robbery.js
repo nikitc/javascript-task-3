@@ -165,18 +165,18 @@ function getMinutes(startTime, day, hours) {
     return startTime - 60 * 24 * day - hours * 60;
 }
 
-
 function convertToBegin(timeRobbery) {
-    if (timeRobbery.minutes === 0) {
-        timeRobbery.minutes = '00';
+    if (timeRobbery.minutes < 10) {
+        timeRobbery.minutes = '0' + timeRobbery.minutes;
     }
 
-    if (timeRobbery.hours === 0) {
-        timeRobbery.hours = '00';
+    if (timeRobbery.hours < 10) {
+        timeRobbery.hours = '0' + timeRobbery.hours;
     }
 
     return timeRobbery;
 }
+
 function getTimeRobbery(startTime) {
     var timeRobbery = {};
     timeRobbery.day = Math.floor(startTime / (60 * 24));
@@ -230,15 +230,10 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
                 return '';
             }
 
-            return template.replace(/%(\w\w)/gi, function (str) {
-                var format = {
-                    '%HH': startRobbery.hours,
-                    '%MM': startRobbery.minutes,
-                    '%DD': NUMBERS[startRobbery.day]
-                };
-
-                return format[str];
-            });
+            return template
+                .replace('%HH', startRobbery.hours)
+                .replace('%MM', startRobbery.minutes)
+                .replace('%DD', NUMBERS[startRobbery.day]);
         },
 
         /**
