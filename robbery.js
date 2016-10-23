@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -51,6 +51,11 @@ function parseDay(day, hours, minutes, delta) {
     if (hours > 23) {
         day += 1;
         hours -= 24;
+    }
+
+    if (hours < 0) {
+        day -= 1;
+        hours += 24;
     }
     convertTime.day = day;
     convertTime.minutes = hours * 60 + minutes + day * 24 * 60;
