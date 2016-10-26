@@ -228,7 +228,7 @@ function findTimeRobbery(robberyIntervals, duration) {
             startTime = interval.from;
             interval.from += 30;
         }
-        //+30 может переползать за интвервал
+
         return interval;
     });
 
