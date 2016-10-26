@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -157,8 +157,8 @@ function getAllIntervals(newSchedule) {
 }
 
 function getFreeIntervals(intervals) {
-    intervals.push({ segment: 'to', value: ROBBERY_DAYS * 24 * 60 - 1 });
-    intervals.push({ segment: 'from', value: ROBBERY_DAYS * 24 * 60 - 1 });
+    intervals.push({ segment: 'from', value: ROBBERY_DAYS * 24 * 60 });
+    intervals.push({ segment: 'to', value: ROBBERY_DAYS * 24 * 60 });
     var counter = 0;
     var prev = 0;
     var freeIntervals = [];
@@ -228,7 +228,7 @@ function findTimeRobbery(robberyIntervals, duration) {
             startTime = interval.from;
             interval.from += 30;
         }
-
+        //+30 может переползать за интвервал
         return interval;
     });
 
