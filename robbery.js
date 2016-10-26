@@ -14,7 +14,8 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
-var DAYS = {
+var ROBBERY_DAYS = 3;
+var DAYS_IN_NUM = {
     'ПН': 0,
     'ВТ': 1,
     'СР': 2,
@@ -24,7 +25,7 @@ var DAYS = {
     'ВС': 6
 };
 
-var NUMBERS = {
+var DAYS_FROM_NUM = {
     0: 'ПН',
     1: 'ВТ',
     2: 'СР'
@@ -33,20 +34,17 @@ var NUMBERS = {
 function getTimeZone(time) {
     var regTimeZone = /\+\d+/g;
 
-    return parseInt(time.match(regTimeZone)[0]);
+    return parseInt(time.match(regTimeZone)[0], 10);
 }
 
 function parseBankWork(time) {
-    var regHours = /(\d\d):/;
-    var regMinutes = /:(\d\d)/;
-    var hours = parseInt(time.match(regHours)[1]);
-    var minutes = parseInt(time.match(regMinutes)[1]);
+    var hours = parseInt(time.slice(0, 2), 10);
+    var minutes = parseInt(time.slice(3, 5), 10);
 
     return hours * 60 + minutes;
 }
 
 function parseDay(day, hours, minutes, delta) {
-    var convertTime = {};
     hours += delta;
     if (hours > 23) {
         day += 1;
@@ -57,45 +55,29 @@ function parseDay(day, hours, minutes, delta) {
         day -= 1;
         hours += 24;
     }
-    convertTime.day = day;
-    convertTime.minutes = hours * 60 + minutes + day * 24 * 60;
 
-    return convertTime;
+    return { day: day, minutes: hours * 60 + minutes + day * 24 * 60 };
 }
 
 function timeConversion(time, delta) {
-    var regDay = /([А-Я]{2}) /;
-    var regHours = /(\d\d):/;
-    var regMinutes = /:(\d\d)/;
-    var hours = parseInt(time.match(regHours)[0]);
-    var day = DAYS[time.match(regDay)[1]];
-    var minutes = parseInt(time.match(regMinutes)[1]);
+    var hours = parseInt(time.slice(3, 5), 10);
+    var day = DAYS_IN_NUM[time.slice(0, 2)];
+    var minutes = parseInt(time.slice(6, 8), 10);
 
     return parseDay(day, hours, minutes, delta);
 }
 
-function createTimeTable() {
-    var timeTable = new Array(3 * 24 * 60);
-    for (var index = 0; index < timeTable.length; index++) {
-        timeTable[index] = 0;
-    }
-
-    return timeTable;
-}
-
-
-function getTableFriend(schedule, friend, timeZone) {
+function getTableFriend(schedule, timeZone) {
     var newSchedule = [];
-
-    for (var index = 0; index < schedule[friend].length; index++) {
-        var meet = {};
-        var meetTimeZone = getTimeZone(schedule[friend][index].from);
+    schedule.forEach(function (meet) {
+        var convertedMeet = {};
+        var meetTimeZone = getTimeZone(meet.from);
         var delta = timeZone - meetTimeZone;
-        meet.from = timeConversion(schedule[friend][index].from, delta);
-        meet.to = timeConversion(schedule[friend][index].to, delta);
+        convertedMeet.from = timeConversion(meet.from, delta);
+        convertedMeet.to = timeConversion(meet.to, delta);
 
-        newSchedule.push(meet);
-    }
+        newSchedule.push(convertedMeet);
+    });
 
     return newSchedule;
 }
@@ -103,65 +85,20 @@ function getTableFriend(schedule, friend, timeZone) {
 function leadToBankTime(schedule, workingHours) {
     var timeZone = getTimeZone(workingHours.from);
     var newSchedule = {};
-    for (var friend in schedule) {
-        if (schedule.hasOwnProperty(friend)) {
-            newSchedule[friend] = getTableFriend(schedule, friend, timeZone);
-        }
-    }
+    var friends = Object.keys(schedule);
+    friends.forEach(function (friend) {
+        newSchedule[friend] = getTableFriend(schedule[friend], timeZone);
+    });
 
     return newSchedule;
 }
 
-function markAsBusy(timeTable, schedule) {
-    for (var time = schedule.from.minutes;
-         time < schedule.to.minutes && time < timeTable.length; time++) {
-        timeTable[time] = 1;
-    }
-}
-
-function findTimeDay(start, to, duration, tableTime) {
-    var countMinutes = 0;
-    var startTime = start;
-    for (var index = start; index < to && countMinutes !== duration; index++) {
-        if (tableTime[index] === 0) {
-            countMinutes++;
-        } else {
-            countMinutes = 0;
-            startTime = index + 1;
-        }
-    }
-    if (countMinutes !== duration) {
-
-        return -1;
-    }
-
-    return startTime;
-}
-
-
-function findTimeRobbery(tableTime, newWorkingHours, duration, start) {
-    var startTime = -1;
-
-    for (var step = 0; step < 3 && startTime === -1; step++) {
-        if (start < newWorkingHours.from + step * 60 * 24) {
-            startTime = findTimeDay(newWorkingHours.from + step * 60 * 24,
-                                    newWorkingHours.to + step * 60 * 24, duration, tableTime);
-        } else {
-            startTime = findTimeDay(start, newWorkingHours.to + step * 60 * 24,
-                                    duration, tableTime);
-        }
-    }
-
-    return startTime;
-}
 
 function getHours(startTime, day) {
-
     return Math.floor((startTime - 60 * 24 * day) / 60);
 }
 
 function getMinutes(startTime, day, hours) {
-
     return startTime - 60 * 24 * day - hours * 60;
 }
 
@@ -177,7 +114,7 @@ function convertToBegin(timeRobbery) {
     return timeRobbery;
 }
 
-function getTimeRobbery(startTime) {
+function getFormatRobbery(startTime) {
     var timeRobbery = {};
     timeRobbery.day = Math.floor(startTime / (60 * 24));
     timeRobbery.hours = getHours(startTime, timeRobbery.day);
@@ -187,22 +124,126 @@ function getTimeRobbery(startTime) {
     return timeRobbery;
 }
 
+function compareIntervals(a, b) {
+    if (a.value.minutes > b.value.minutes) {
+
+        return 1;
+    }
+    if (a.value.minutes < b.value.minutes) {
+
+        return -1;
+    }
+
+    if (a.segment === 'from') {
+
+        return 1;
+    }
+
+    return -1;
+
+}
+
+function getAllIntervals(newSchedule) {
+    var intervals = [];
+    var friends = Object.keys(newSchedule);
+    friends.forEach(function (friend) {
+        newSchedule[friend].forEach(function (interval) {
+            intervals.push({ segment: 'from', value: interval.from });
+            intervals.push({ segment: 'to', value: interval.to });
+        });
+    });
+
+    return intervals.sort(compareIntervals);
+}
+
+function getFreeIntervals(intervals) {
+    intervals.push({ segment: 'to', value: ROBBERY_DAYS * 24 * 60 - 1 });
+    intervals.push({ segment: 'from', value: ROBBERY_DAYS * 24 * 60 - 1 });
+    var counter = 0;
+    var prev = 0;
+    var freeIntervals = [];
+    intervals.forEach(function (interval) {
+        if (counter === 0) {
+            freeIntervals.push({ from: prev, to: interval.value.minutes });
+        }
+        if (interval.segment === 'from') {
+            counter++;
+        } else {
+            counter--;
+        }
+        prev = interval.value.minutes;
+    });
+
+    return freeIntervals;
+}
+
+function isTimeBank(from, to, interval) {
+
+    return (from <= interval.from <= to ||
+            from <= interval.to <= to);
+}
+
+function getRobberyDay(from, to, freeIntervals) {
+    var robberyIntervals = [];
+    freeIntervals.forEach(function (interval) {
+        if (isTimeBank(from, to, interval)) {
+            robberyIntervals.push({ from: Math.max(from, interval.from),
+                                    to: Math.min(to, interval.to) });
+        }
+    });
+
+    return robberyIntervals;
+}
+
+function getRobberyIntervals(freeIntervals, newWorkingHours) {
+
+    var robberyIntervals = [];
+    for (var day = 0; day < ROBBERY_DAYS; day++) {
+        var delta = day * 24 * 60;
+        var currentRobberyDay = getRobberyDay(newWorkingHours.from + delta,
+                                                newWorkingHours.to + delta,
+                                                freeIntervals);
+        robberyIntervals = robberyIntervals.concat(currentRobberyDay);
+    }
+
+    return robberyIntervals;
+
+}
+
+function getGoodIntervals(newSchedule, newWorkingHours) {
+    var intervals = getAllIntervals(newSchedule);
+    var freeIntervals = getFreeIntervals(intervals);
+
+    return getRobberyIntervals(freeIntervals, newWorkingHours);
+}
+
+function findTimeRobbery(robberyIntervals, duration) {
+    var startTime = -1;
+    robberyIntervals.map(function (interval) {
+        if (startTime !== -1) {
+
+            return interval;
+        }
+        if (interval.to - interval.from >= duration) {
+            startTime = interval.from;
+            interval.from += 30;
+        }
+
+        return interval;
+    });
+
+    return startTime;
+}
+
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var newSchedule = leadToBankTime(schedule, workingHours);
-    var newWorkingHours = {};
-    newWorkingHours.from = parseBankWork(workingHours.from);
-    newWorkingHours.to = parseBankWork(workingHours.to);
-    var tableTime = createTimeTable();
-    for (var friend in newSchedule) {
-        if (newSchedule.hasOwnProperty(friend)) {
-            newSchedule[friend].forEach(function (table) {
-                markAsBusy(tableTime, table);
-            });
-        }
-    }
-    var startTime = findTimeRobbery(tableTime, newWorkingHours, duration, 0);
-    var startRobbery = getTimeRobbery(startTime);
+    var newWorkingHours = { from: parseBankWork(workingHours.from),
+                            to: parseBankWork(workingHours.to) };
+
+    var robberyIntervals = getGoodIntervals(newSchedule, newWorkingHours);
+    var startTime = findTimeRobbery(robberyIntervals, duration);
+    var startRobbery = getFormatRobbery(startTime);
     var exist = startTime !== -1;
 
     return {
@@ -233,7 +274,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
             return template
                 .replace('%HH', startRobbery.hours)
                 .replace('%MM', startRobbery.minutes)
-                .replace('%DD', NUMBERS[startRobbery.day]);
+                .replace('%DD', DAYS_FROM_NUM[startRobbery.day]);
         },
 
         /**
@@ -242,14 +283,12 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
          * @returns {Boolean}
          */
         tryLater: function () {
-            var newStartTime = findTimeRobbery(tableTime, newWorkingHours,
-                                                duration, startTime + 30);
+            var newStartTime = findTimeRobbery(robberyIntervals, duration);
             if (newStartTime === -1) {
-
                 return false;
             }
             startTime = newStartTime;
-            startRobbery = getTimeRobbery(startTime);
+            startRobbery = getFormatRobbery(startTime);
 
             return true;
         }
