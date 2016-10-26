@@ -4,7 +4,7 @@
  * Сделано задание на звездочку
  * Реализовано оба метода и tryLater
  */
-exports.isStar = false;
+exports.isStar = true;
 
 /**
  * @param {Object} schedule – Расписание Банды
@@ -125,11 +125,11 @@ function getFormatRobbery(startTime) {
 }
 
 function compareIntervals(a, b) {
-    if (a.value.minutes > b.value.minutes) {
+    if (a.value > b.value) {
 
         return 1;
     }
-    if (a.value.minutes < b.value.minutes) {
+    if (a.value < b.value) {
 
         return -1;
     }
@@ -145,8 +145,8 @@ function getAllIntervals(newSchedule) {
     var friends = Object.keys(newSchedule);
     friends.forEach(function (friend) {
         newSchedule[friend].forEach(function (interval) {
-            intervals.push({ segment: 'from', value: interval.from });
-            intervals.push({ segment: 'to', value: interval.to });
+            intervals.push({ segment: 'from', value: interval.from.minutes });
+            intervals.push({ segment: 'to', value: interval.to.minutes });
         });
     });
 
@@ -154,21 +154,21 @@ function getAllIntervals(newSchedule) {
 }
 
 function getFreeIntervals(intervals) {
-    intervals.push({ segment: 'from', value: ROBBERY_DAYS * 24 * 60 });
-    intervals.push({ segment: 'to', value: ROBBERY_DAYS * 24 * 60 });
+    intervals.push({ segment: 'from', value: ROBBERY_DAYS * 24 * 60 + 1 });
+    intervals.push({ segment: 'to', value: ROBBERY_DAYS * 24 * 60 + 1 });
     var counter = 0;
     var prev = 0;
     var freeIntervals = [];
     intervals.forEach(function (interval) {
         if (counter === 0) {
-            freeIntervals.push({ from: prev, to: interval.value.minutes });
+            freeIntervals.push({ from: prev, to: interval.value });
         }
         if (interval.segment === 'from') {
             counter++;
         } else {
             counter--;
         }
-        prev = interval.value.minutes;
+        prev = interval.value;
     });
 
     return freeIntervals;
