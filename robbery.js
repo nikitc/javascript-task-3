@@ -136,7 +136,7 @@ function compareIntervals(a, b) {
 
     if (a.segment === 'from') {
 
-        return 1;
+        return -1;
     }
 }
 
