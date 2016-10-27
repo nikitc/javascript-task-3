@@ -159,7 +159,7 @@ function getFreeIntervals(intervals) {
     var prev = 0;
     var freeIntervals = [];
     intervals.forEach(function (interval) {
-        if (counter === 0) {
+        if (!counter) {
             freeIntervals.push({ from: prev, to: interval.value });
         }
         if (interval.segment === 'from') {
