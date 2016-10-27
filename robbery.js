@@ -57,7 +57,7 @@ function parseDay(day, hours, minutes, delta) {
         hours += 24;
     }
 
-    return { day: day, minutes: hours * 60 + minutes + day * 24 * 60 };
+    return { day: day, minutes: day * 24 * 60 + hours * 60 + minutes };
 }
 
 function timeConversion(time, delta) {
@@ -68,16 +68,16 @@ function timeConversion(time, delta) {
     return parseDay(day, hours, minutes, delta);
 }
 
-function getTableFriend(schedule, timeZone) {
+function getFriendSchedule(schedule, timeZone) {
     var newSchedule = [];
     schedule.forEach(function (meet) {
-        var convertedMeet = {};
         var meetTimeZone = getTimeZone(meet.from);
         var delta = timeZone - meetTimeZone;
-        convertedMeet.from = timeConversion(meet.from, delta);
-        convertedMeet.to = timeConversion(meet.to, delta);
 
-        newSchedule.push(convertedMeet);
+        newSchedule.push({
+            from: timeConversion(meet.from, delta),
+            to: timeConversion(meet.to, delta)
+        });
     });
 
     return newSchedule;
@@ -88,7 +88,7 @@ function leadToBankTime(schedule, workingHours) {
     var newSchedule = {};
     var friends = Object.keys(schedule);
     friends.forEach(function (friend) {
-        newSchedule[friend] = getTableFriend(schedule[friend], timeZone);
+        newSchedule[friend] = getFriendSchedule(schedule[friend], timeZone);
     });
 
     return newSchedule;
@@ -116,36 +116,34 @@ function convertToBegin(timeRobbery) {
 }
 
 function getFormatRobbery(startTime) {
-    var timeRobbery = {};
-    timeRobbery.day = Math.floor(startTime / (60 * 24));
-    timeRobbery.hours = getHours(startTime, timeRobbery.day);
-    timeRobbery.minutes = getMinutes(startTime, timeRobbery.day, timeRobbery.hours);
-    timeRobbery = convertToBegin(timeRobbery);
+    var currentDay = Math.floor(startTime / (60 * 24));
+    var currentHours = getHours(startTime, currentDay);
 
-    return timeRobbery;
+    return convertToBegin({
+        day: currentDay,
+        hours: currentHours,
+        minutes: getMinutes(startTime, currentDay, currentHours)
+    });
 }
 
 function compareIntervals(a, b) {
     if (a.value > b.value) {
-
         return 1;
     }
     if (a.value < b.value) {
-
         return -1;
     }
 
     if (a.segment === 'from') {
-
         return -1;
     }
 }
 
-function getAllIntervals(newSchedule) {
+function getAllIntervals(schedule) {
     var intervals = [];
-    var friends = Object.keys(newSchedule);
+    var friends = Object.keys(schedule);
     friends.forEach(function (friend) {
-        newSchedule[friend].forEach(function (interval) {
+        schedule[friend].forEach(function (interval) {
             intervals.push({ segment: 'from', value: interval.from.minutes });
             intervals.push({ segment: 'to', value: interval.to.minutes });
         });
@@ -176,30 +174,30 @@ function getFreeIntervals(intervals) {
 }
 
 function isTimeBank(from, to, interval) {
-
     return (from <= interval.from <= to ||
             from <= interval.to <= to);
 }
 
 function getRobberyDay(from, to, freeIntervals) {
-    var robberyIntervals = [];
-    freeIntervals.forEach(function (interval) {
-        if (isTimeBank(from, to, interval)) {
-            robberyIntervals.push({ from: Math.max(from, interval.from),
-                                    to: Math.min(to, interval.to) });
-        }
+    freeIntervals.filter(function (interval) {
+        return isTimeBank(from, to, interval);
     });
 
-    return robberyIntervals;
+    return freeIntervals.map(function (interval) {
+        return {
+            from: Math.max(from, interval.from),
+            to: Math.min(to, interval.to)
+        };
+    });
 }
 
-function getComfortableIntervals(freeIntervals, newWorkingHours) {
+function getComfortableIntervals(freeIntervals, workingHours) {
 
     var robberyIntervals = [];
     for (var day = 0; day < ROBBERY_DAYS; day++) {
         var delta = day * 24 * 60;
-        var currentRobberyDay = getRobberyDay(newWorkingHours.from + delta,
-                                                newWorkingHours.to + delta,
+        var currentRobberyDay = getRobberyDay(workingHours.from + delta,
+                                                workingHours.to + delta,
                                                 freeIntervals);
         robberyIntervals = robberyIntervals.concat(currentRobberyDay);
     }
@@ -207,27 +205,24 @@ function getComfortableIntervals(freeIntervals, newWorkingHours) {
     return robberyIntervals;
 }
 
-function getRobberyIntervals(newSchedule, newWorkingHours) {
-    var intervals = getAllIntervals(newSchedule);
+function getRobberyIntervals(schedule, workingHours) {
+    var intervals = getAllIntervals(schedule);
     var freeIntervals = getFreeIntervals(intervals);
 
-    return getComfortableIntervals(freeIntervals, newWorkingHours);
+    return getComfortableIntervals(freeIntervals, workingHours);
 }
 
 function findTimeRobbery(robberyIntervals, duration) {
     var startTime = -1;
-    robberyIntervals.map(function (interval) {
-        if (startTime !== -1) {
-
-            return interval;
+    for (var index = 0; index < robberyIntervals.length; index++) {
+        var currentFrom = robberyIntervals[index].from;
+        var currentTo = robberyIntervals[index].to;
+        if (currentTo - currentFrom >= duration) {
+            startTime = currentFrom;
+            robberyIntervals[index].from += TIME_AFTER_ROBBERY;
+            break;
         }
-        if (interval.to - interval.from >= duration) {
-            startTime = interval.from;
-            interval.from += TIME_AFTER_ROBBERY;
-        }
-
-        return interval;
-    });
+    }
 
     return startTime;
 }
@@ -264,7 +259,6 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
 
         format: function (template) {
             if (!exist) {
-
                 return '';
             }
 
