@@ -14,6 +14,7 @@ exports.isStar = true;
  * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
  * @returns {Object}
  */
+var TIME_AFTER_ROBBERY = 30;
 var ROBBERY_DAYS = 3;
 var DAYS_IN_NUM = {
     'ПН': 0,
@@ -192,7 +193,7 @@ function getRobberyDay(from, to, freeIntervals) {
     return robberyIntervals;
 }
 
-function getRobberyIntervals(freeIntervals, newWorkingHours) {
+function getComfortableIntervals(freeIntervals, newWorkingHours) {
 
     var robberyIntervals = [];
     for (var day = 0; day < ROBBERY_DAYS; day++) {
@@ -204,14 +205,13 @@ function getRobberyIntervals(freeIntervals, newWorkingHours) {
     }
 
     return robberyIntervals;
-
 }
 
-function getGoodIntervals(newSchedule, newWorkingHours) {
+function getRobberyIntervals(newSchedule, newWorkingHours) {
     var intervals = getAllIntervals(newSchedule);
     var freeIntervals = getFreeIntervals(intervals);
 
-    return getRobberyIntervals(freeIntervals, newWorkingHours);
+    return getComfortableIntervals(freeIntervals, newWorkingHours);
 }
 
 function findTimeRobbery(robberyIntervals, duration) {
@@ -223,7 +223,7 @@ function findTimeRobbery(robberyIntervals, duration) {
         }
         if (interval.to - interval.from >= duration) {
             startTime = interval.from;
-            interval.from += 30;
+            interval.from += TIME_AFTER_ROBBERY;
         }
 
         return interval;
@@ -238,7 +238,7 @@ exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     var newWorkingHours = { from: parseBankWork(workingHours.from),
                             to: parseBankWork(workingHours.to) };
 
-    var robberyIntervals = getGoodIntervals(newSchedule, newWorkingHours);
+    var robberyIntervals = getRobberyIntervals(newSchedule, newWorkingHours);
     var startTime = findTimeRobbery(robberyIntervals, duration);
     var startRobbery = getFormatRobbery(startTime);
     var exist = startTime !== -1;
