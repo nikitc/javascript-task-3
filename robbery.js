@@ -69,18 +69,15 @@ function timeConversion(time, delta) {
 }
 
 function getFriendSchedule(schedule, timeZone) {
-    var newSchedule = [];
-    schedule.forEach(function (meet) {
+    return schedule.map(function (meet) {
         var meetTimeZone = getTimeZone(meet.from);
         var delta = timeZone - meetTimeZone;
 
-        newSchedule.push({
+        return {
             from: timeConversion(meet.from, delta),
             to: timeConversion(meet.to, delta)
-        });
+        };
     });
-
-    return newSchedule;
 }
 
 function leadToBankTime(schedule, workingHours) {
@@ -103,14 +100,17 @@ function getMinutes(startTime, day, hours) {
     return startTime - 60 * 24 * day - hours * 60;
 }
 
-function convertToBegin(timeRobbery) {
-    if (timeRobbery.minutes < 10) {
-        timeRobbery.minutes = '0' + timeRobbery.minutes;
+function addZeroBefore(value) {
+    if (value < 10) {
+        return '0' + value;
     }
 
-    if (timeRobbery.hours < 10) {
-        timeRobbery.hours = '0' + timeRobbery.hours;
-    }
+    return value;
+}
+
+function convertToBegin(timeRobbery) {
+    timeRobbery.minutes = addZeroBefore(timeRobbery.minutes);
+    timeRobbery.hours = addZeroBefore(timeRobbery.hours);
 
     return timeRobbery;
 }
@@ -192,7 +192,6 @@ function getRobberyDay(from, to, freeIntervals) {
 }
 
 function getComfortableIntervals(freeIntervals, workingHours) {
-
     var robberyIntervals = [];
     for (var day = 0; day < ROBBERY_DAYS; day++) {
         var delta = day * 24 * 60;
@@ -230,8 +229,10 @@ function findTimeRobbery(robberyIntervals, duration) {
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var newSchedule = leadToBankTime(schedule, workingHours);
-    var newWorkingHours = { from: parseBankWork(workingHours.from),
-                            to: parseBankWork(workingHours.to) };
+    var newWorkingHours = {
+        from: parseBankWork(workingHours.from),
+        to: parseBankWork(workingHours.to)
+    };
 
     var robberyIntervals = getRobberyIntervals(newSchedule, newWorkingHours);
     var startTime = findTimeRobbery(robberyIntervals, duration);
