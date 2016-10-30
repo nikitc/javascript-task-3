@@ -6,14 +6,7 @@
  */
 exports.isStar = true;
 
-/**
- * @param {Object} schedule – Расписание Банды
- * @param {Number} duration - Время на ограбление в минутах
- * @param {Object} workingHours – Время работы банка
- * @param {String} workingHours.from – Время открытия, например, "10:00+5"
- * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
- * @returns {Object}
- */
+
 var TIME_AFTER_ROBBERY = 30;
 var ROBBERY_DAYS = 3;
 var DAYS_IN_NUM = {
@@ -57,7 +50,10 @@ function parseDay(day, hours, minutes, delta) {
         hours += 24;
     }
 
-    return { day: day, minutes: day * 24 * 60 + hours * 60 + minutes };
+    return {
+        day: day,
+        minutes: day * 24 * 60 + hours * 60 + minutes
+    };
 }
 
 function timeConversion(time, delta) {
@@ -141,8 +137,7 @@ function compareIntervals(a, b) {
 
 function getAllIntervals(schedule) {
     var intervals = [];
-    var friends = Object.keys(schedule);
-    friends.forEach(function (friend) {
+    Object.keys(schedule).forEach(function (friend) {
         schedule[friend].forEach(function (interval) {
             intervals.push({ segment: 'from', value: interval.from.minutes });
             intervals.push({ segment: 'to', value: interval.to.minutes });
@@ -179,16 +174,16 @@ function isTimeBank(from, to, interval) {
 }
 
 function getRobberyDay(from, to, freeIntervals) {
-    freeIntervals.filter(function (interval) {
-        return isTimeBank(from, to, interval);
-    });
-
-    return freeIntervals.map(function (interval) {
-        return {
-            from: Math.max(from, interval.from),
-            to: Math.min(to, interval.to)
-        };
-    });
+    return freeIntervals
+        .filter(function (interval) {
+            return isTimeBank(from, to, interval);
+        })
+        .map(function (interval) {
+            return {
+                from: Math.max(from, interval.from),
+                to: Math.min(to, interval.to)
+            };
+        });
 }
 
 function getComfortableIntervals(freeIntervals, workingHours) {
@@ -226,6 +221,14 @@ function findTimeRobbery(robberyIntervals, duration) {
     return startTime;
 }
 
+/**
+ * @param {Object} schedule – Расписание Банды
+ * @param {Number} duration - Время на ограбление в минутах
+ * @param {Object} workingHours – Время работы банка
+ * @param {String} workingHours.from – Время открытия, например, "10:00+5"
+ * @param {String} workingHours.to – Время закрытия, например, "18:00+5"
+ * @returns {Object}
+ */
 exports.getAppropriateMoment = function (schedule, duration, workingHours) {
     console.info(schedule, duration, workingHours);
     var newSchedule = leadToBankTime(schedule, workingHours);
